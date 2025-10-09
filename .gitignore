@@ -20,3 +20,5 @@ MemoryCaptures/
 *.opendb
 *.VC.db
 *.pidb.meta
+# Ignore NatureManufacture assets
+Assets/NatureManufacture Assets/
