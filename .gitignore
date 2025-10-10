@@ -22,3 +22,4 @@ MemoryCaptures/
 *.pidb.meta
 # Ignore NatureManufacture assets
 Assets/NatureManufacture Assets/
+Assets/_Recovery/
