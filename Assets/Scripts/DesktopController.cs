@@ -10,6 +10,7 @@ public class DesktopController : MonoBehaviour
     [Header("Mouse Look")]
     public float mouseSensitivity = 2f;
     public bool requireRightClick = true;
+    public float cameraYawOffset = 10f; // <- constant side offset
 
     private CharacterController controller;
     private float verticalVelocity;
@@ -36,9 +37,9 @@ public class DesktopController : MonoBehaviour
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
 
-        // move relative to the player's facing direction
-        Vector3 move = playerBody.forward * moveZ + playerBody.right * moveX;
-        controller.Move(move * moveSpeed * Time.deltaTime);
+        // movement relative to player's true forward (not camera)
+        Vector3 move = (playerBody.forward * moveZ + playerBody.right * moveX) * moveSpeed;
+        controller.Move(move * Time.deltaTime);
 
         // gravity
         if (controller.isGrounded && verticalVelocity < 0)
@@ -57,18 +58,17 @@ public class DesktopController : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // vertical look (pitch) - camera only
+        // vertical look (pitch)
         xRot -= mouseY;
         xRot = Mathf.Clamp(xRot, -80f, 80f);
-        transform.localRotation = Quaternion.Euler(xRot, 0f, 0f);
 
-        // horizontal look (yaw) - body only
-        // Use global Y axis to avoid tilt accumulation
-        Vector3 bodyEuler = playerBody.eulerAngles;
-        bodyEuler.y += mouseX;
-        playerBody.eulerAngles = bodyEuler;
+        // rotate player body horizontally (yaw)
+        playerBody.Rotate(Vector3.up * mouseX, Space.World);
 
-        // keep camera centered on body
+        // apply pitch to camera + fixed yaw offset (local to player)
+        transform.localRotation = Quaternion.Euler(xRot, cameraYawOffset, 0f);
+
+        // keep camera positioned above player's head
         transform.localPosition = new Vector3(0f, 1.6f, 0f);
     }
 }
