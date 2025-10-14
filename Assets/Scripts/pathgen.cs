@@ -7,7 +7,6 @@ public class MeshPathGenerator : MonoBehaviour
 {
     [Header("Terrain Settings")]
     public Terrain terrain;
-    public LayerMask terrainLayer;
 
     [Header("Path Points")]
     public bool useChildPoints = true;
@@ -17,7 +16,13 @@ public class MeshPathGenerator : MonoBehaviour
     public float pathWidth = 1.5f;
     public float pathHeightOffset = 0.05f;
     public bool smoothPath = true;
-    [Range(2, 50)] public int smoothSegments = 10;
+    [Range(2, 50)] public int smoothSegments = 20;
+
+    [Header("Debug Options")]
+    public bool showRaycasts = false;
+    public bool forcePlayModeRaycasts = false; 
+    public float rayStartHeight = 50f;
+    public float rayMaxDistance = 200f;
 
     [Header("Generate")]
     public bool generatePath = false;
@@ -45,7 +50,7 @@ public class MeshPathGenerator : MonoBehaviour
             return;
         }
 
-        // Συλλογή σημείων
+        // === Συλλογή σημείων ===
         List<Vector3> points = new List<Vector3>();
         if (useChildPoints)
         {
@@ -66,11 +71,13 @@ public class MeshPathGenerator : MonoBehaviour
             points.Add(t.position);
         }
 
-        // Smooth path
+        // === Εξομάλυνση και δειγματοληψία ύψους ===
         if (smoothPath && points.Count > 2)
-            points = SmoothPoints(points, smoothSegments);
+            points = SmoothPointsWithTerrain(points, smoothSegments);
+        else
+            points = ProjectPointsOnTerrain(points);
 
-        // Δημιουργία Mesh
+        // === Δημιουργία Mesh ===
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         List<Vector2> uvs = new List<Vector2>();
@@ -82,7 +89,6 @@ public class MeshPathGenerator : MonoBehaviour
             if (i > 0)
                 totalDistance += Vector3.Distance(points[i - 1], points[i]);
 
-            // Forward vector
             Vector3 forward = Vector3.zero;
             if (i < points.Count - 1)
                 forward += (points[i + 1] - points[i]).normalized;
@@ -92,13 +98,11 @@ public class MeshPathGenerator : MonoBehaviour
 
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized * (pathWidth * 0.5f);
 
-            // Αριστερό και δεξί vertex
             Vector3 leftPos = points[i] - right;
             Vector3 rightPos = points[i] + right;
 
-            // Raycast για κάθε vertex ώστε να κολλάει στο terrain
-            leftPos = AlignToTerrain(leftPos);
-            rightPos = AlignToTerrain(rightPos);
+            leftPos = AlignToTerrainWithDebug(leftPos);
+            rightPos = AlignToTerrainWithDebug(rightPos);
 
             vertices.Add(leftPos);
             vertices.Add(rightPos);
@@ -119,7 +123,7 @@ public class MeshPathGenerator : MonoBehaviour
             }
         }
 
-        // World -> Local
+        // === World -> Local ===
         for (int i = 0; i < vertices.Count; i++)
             vertices[i] = transform.InverseTransformPoint(vertices[i]);
 
@@ -136,22 +140,19 @@ public class MeshPathGenerator : MonoBehaviour
         Debug.Log($"✅ Mesh path generated with {vertices.Count} verts and {points.Count} points!");
     }
 
-    private Vector3 AlignToTerrain(Vector3 pos)
+    private List<Vector3> ProjectPointsOnTerrain(List<Vector3> pts)
     {
-        Ray ray = new Ray(pos + Vector3.up * 50f, Vector3.down);
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f, terrainLayer))
+        List<Vector3> projected = new List<Vector3>();
+        foreach (var p in pts)
         {
-            pos.y = hit.point.y + pathHeightOffset;
+            Vector3 pos = p;
+            pos.y = terrain.SampleHeight(pos) + terrain.GetPosition().y + pathHeightOffset;
+            projected.Add(pos);
         }
-        else
-        {
-            // fallback σε SampleHeight
-            pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y + pathHeightOffset;
-        }
-        return pos;
+        return projected;
     }
 
-    private List<Vector3> SmoothPoints(List<Vector3> pts, int segments)
+    private List<Vector3> SmoothPointsWithTerrain(List<Vector3> pts, int segments)
     {
         List<Vector3> smoothed = new List<Vector3>();
         for (int i = 0; i < pts.Count - 1; i++)
@@ -161,10 +162,51 @@ public class MeshPathGenerator : MonoBehaviour
             for (int s = 0; s < segments; s++)
             {
                 float t = s / (float)segments;
-                smoothed.Add(Vector3.Lerp(p0, p1, t));
+                Vector3 pos = Vector3.Lerp(p0, p1, t);
+                pos.y = terrain.SampleHeight(pos) + terrain.GetPosition().y + pathHeightOffset;
+                smoothed.Add(pos);
             }
         }
-        smoothed.Add(pts[pts.Count - 1]);
+
+        Vector3 last = pts[pts.Count - 1];
+        last.y = terrain.SampleHeight(last) + terrain.GetPosition().y + pathHeightOffset;
+        smoothed.Add(last);
         return smoothed;
+    }
+
+    private Vector3 AlignToTerrainWithDebug(Vector3 pos)
+    {
+        Vector3 rayStart = pos + Vector3.up * rayStartHeight;
+        Ray ray = new Ray(rayStart, Vector3.down);
+
+        bool didRay = false;
+        RaycastHit hit = new RaycastHit(); // ✅ FIX για το CS0165
+
+        // Αν είμαστε σε edit mode και θέλουμε να παρακάμψουμε raycasts
+        if (forcePlayModeRaycasts && !Application.isPlaying)
+        {
+            didRay = false;
+        }
+        else
+        {
+            didRay = Physics.Raycast(ray, out hit, rayMaxDistance);
+        }
+
+        if (didRay)
+        {
+            pos.y = hit.point.y + pathHeightOffset;
+
+            if (showRaycasts)
+                Debug.DrawLine(rayStart, hit.point, Color.green, 1f);
+        }
+        else
+        {
+            pos.y = terrain.SampleHeight(pos) + terrain.GetPosition().y + pathHeightOffset;
+
+            if (showRaycasts)
+                Debug.DrawRay(rayStart, Vector3.down * rayMaxDistance, Color.red, 1f);
+        }
+
+        return pos;
     }
 }
