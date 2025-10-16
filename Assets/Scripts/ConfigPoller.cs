@@ -62,7 +62,6 @@ public class ConfigPoller : MonoBehaviour
             }
         }
     }
-
     void ApplyConfig(ConfigData config)
     {
         currentConfig = config;
