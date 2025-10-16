@@ -21,5 +21,6 @@ MemoryCaptures/
 *.VC.db
 *.pidb.meta
 # Ignore NatureManufacture assets
-Assets/NatureManufacture Assets/
+Assets/NatureManufacture Forest/
+Assets/NatureManufacture Mountain/
 Assets/_Recovery/
