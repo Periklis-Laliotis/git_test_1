@@ -12,6 +12,7 @@ public class ConfigData
 
 public class ConfigPoller : MonoBehaviour
 {
+    public static System.Action<ConfigData> OnConfigUpdated;
     [Header("Server Settings")]
     [Tooltip("The URL to your the JSON output")]
     public string configUrl = "https://xrproject.eu/trust/demo/acrophobia/getConfig.php";
@@ -66,7 +67,7 @@ public class ConfigPoller : MonoBehaviour
     {
         currentConfig = config;
         Debug.Log($"Applied Config -> Wind Speed: {config.wind_speed}, Sway Effect: {config.sway_effect}, Transparency: {config.transparency}");
-
+        OnConfigUpdated?.Invoke(config);
         // Example of dynamic application:
         // Adjust environment or object parameters here:
         // e.g., windZone.windMain = config.wind_speed;

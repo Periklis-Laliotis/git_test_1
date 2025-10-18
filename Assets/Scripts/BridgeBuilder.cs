@@ -6,7 +6,7 @@ public class BridgeBuilder : MonoBehaviour
     public Transform startAnchor;
     public Transform endAnchor;
     public GameObject plankPrefab;
-    [Range(2, 50)] public int plankCount = 15;
+    [Range(2, 100)] public int plankCount = 15;
     public float plankSpacing = 0.6f;
 
     [Header("Physics")]
@@ -36,34 +36,57 @@ public class BridgeBuilder : MonoBehaviour
         for (int i = 0; i < plankCount; i++)
         {
             Vector3 pos = startAnchor.position + dir * spacing * i;
-            Quaternion rot = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 90f, 0);
+            Quaternion rot = Quaternion.LookRotation(dir);
             GameObject plank = Instantiate(plankPrefab, pos, rot, transform);
             Rigidbody rb = plank.GetComponent<Rigidbody>();
             rb.mass = plankMass;
+            rb.linearDamping = 0.5f;
+            rb.angularDamping = 0.8f;
 
             // connect to previous
             if (prevBody != null)
             {
                 if (useConfigurableJoints)
                 {
-                    var cj = plank.AddComponent<ConfigurableJoint>();
-                    cj.connectedBody = prevBody;
-                    cj.xMotion = ConfigurableJointMotion.Locked;
-                    cj.yMotion = ConfigurableJointMotion.Limited;
-                    cj.zMotion = ConfigurableJointMotion.Locked;
-                    cj.angularXMotion = ConfigurableJointMotion.Limited;
-                    cj.angularYMotion = ConfigurableJointMotion.Free;
-                    cj.angularZMotion = ConfigurableJointMotion.Limited;
+                    // Left-side configurable joint
+                    var cjLeft = plank.AddComponent<ConfigurableJoint>();
+                    cjLeft.connectedBody = prevBody;
+                    cjLeft.anchor = new Vector3(-0.3f, 0, -0.2f);
+                    cjLeft.xMotion = ConfigurableJointMotion.Locked;
+                    cjLeft.yMotion = ConfigurableJointMotion.Limited;
+                    cjLeft.zMotion = ConfigurableJointMotion.Locked;
+                    cjLeft.angularXMotion = ConfigurableJointMotion.Limited;
+                    cjLeft.angularYMotion = ConfigurableJointMotion.Free;
+                    cjLeft.angularZMotion = ConfigurableJointMotion.Limited;
+
+                    // Right-side configurable joint
+                    var cjRight = plank.AddComponent<ConfigurableJoint>();
+                    cjRight.connectedBody = prevBody;
+                    cjRight.anchor = new Vector3(0.3f, 0, -0.2f);
+                    cjRight.xMotion = ConfigurableJointMotion.Locked;
+                    cjRight.yMotion = ConfigurableJointMotion.Limited;
+                    cjRight.zMotion = ConfigurableJointMotion.Locked;
+                    cjRight.angularXMotion = ConfigurableJointMotion.Limited;
+                    cjRight.angularYMotion = ConfigurableJointMotion.Free;
+                    cjRight.angularZMotion = ConfigurableJointMotion.Limited;
                 }
                 else
                 {
-                    var hj = plank.AddComponent<HingeJoint>();
-                    hj.connectedBody = prevBody;
-                    hj.anchor = new Vector3(0, 0, -0.2f);
-                    hj.axis = Vector3.right;
-                    hj.useLimits = true;
-                    JointLimits limits = new JointLimits { min = -10f, max = 10f };
-                    hj.limits = limits;
+                    // Left hinge joint
+                    var hjLeft = plank.AddComponent<HingeJoint>();
+                    hjLeft.connectedBody = prevBody;
+                    hjLeft.anchor = new Vector3(-0.3f, 0, -0.2f);
+                    hjLeft.axis = Vector3.right;
+                    hjLeft.useLimits = true;
+                    hjLeft.limits = new JointLimits { min = -10f, max = 10f };
+
+                    // Right hinge joint
+                    var hjRight = plank.AddComponent<HingeJoint>();
+                    hjRight.connectedBody = prevBody;
+                    hjRight.anchor = new Vector3(0.3f, 0, -0.2f);
+                    hjRight.axis = Vector3.right;
+                    hjRight.useLimits = true;
+                    hjRight.limits = new JointLimits { min = -10f, max = 10f };
                 }
             }
 
