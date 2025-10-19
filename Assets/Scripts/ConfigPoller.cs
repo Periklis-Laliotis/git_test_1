@@ -8,6 +8,7 @@ public class ConfigData
     public int wind_speed;
     public int sway_effect;
     public int transparency;
+    
 }
 
 public class ConfigPoller : MonoBehaviour
@@ -21,6 +22,7 @@ public class ConfigPoller : MonoBehaviour
     public float pollInterval = 3f;
 
     private ConfigData currentConfig;
+    public ConfigData CurrentConfig => currentConfig;
 
     void Start()
     {
