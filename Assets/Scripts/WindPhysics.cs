@@ -6,7 +6,7 @@ public class WindPhysics : MonoBehaviour
     [Header("Wind Setup")]
     public WindZone windZone;
     [Tooltip("Multiplier for wind strength applied to rigidbodies.")]
-    public float forceMultiplier = 1.0f;
+    public float forceMultiplier = 0.001f;
 
     private Rigidbody[] targetBodies;
     private Vector3 baseWindDir;
@@ -41,7 +41,7 @@ public class WindPhysics : MonoBehaviour
             return;
 
         Vector3 windDir = windZone.transform.forward.normalized;
-        float strength = windZone.windMain * 50f * forceMultiplier;
+        float strength = windZone.windMain * 5f * forceMultiplier;
         strength += Mathf.PerlinNoise(Time.time * windZone.windPulseFrequency, 0f) * windZone.windTurbulence * 20f;
         float pulse = 1f + Mathf.Sin(Time.time * windZone.windPulseFrequency) * windZone.windPulseMagnitude;
         Vector3 windForce = windDir * strength * pulse;
