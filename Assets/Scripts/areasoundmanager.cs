@@ -12,6 +12,10 @@ public class AreaSoundManager : MonoBehaviour
     public AudioSource forestWind;
     public AudioSource mountainWind;
 
+    [Header("Wind Volume Settings")]
+    [Range(0f, 1f)] public float forestWindVolume = 0.5f;
+    [Range(0f, 1f)] public float mountainWindVolume = 1f;
+
     [Header("Footstep Clips")]
     public AudioClip[] forestFootsteps;
     public AudioClip[] mountainFootsteps;
@@ -49,7 +53,7 @@ public class AreaSoundManager : MonoBehaviour
                 footstepManager.ChangeFootstepClips(mountainFootsteps);
 
             // Fade forest -> mountain
-            yield return StartCoroutine(FadeAudio(forestWind, mountainWind, fadeDuration));
+            yield return StartCoroutine(FadeAudio(forestWind, mountainWind, fadeDuration, forestWindVolume, mountainWindVolume));
 
             // Σταμάτα πουλιά
             if (forestAudioManager != null)
@@ -64,7 +68,7 @@ public class AreaSoundManager : MonoBehaviour
                 footstepManager.ChangeFootstepClips(forestFootsteps);
 
             // Fade mountain -> forest
-            yield return StartCoroutine(FadeAudio(mountainWind, forestWind, fadeDuration));
+            yield return StartCoroutine(FadeAudio(mountainWind, forestWind, fadeDuration, mountainWindVolume, forestWindVolume));
 
             // Ξεκίνα ξανά τα πουλιά
             if (forestAudioManager != null)
@@ -72,10 +76,10 @@ public class AreaSoundManager : MonoBehaviour
         }
 
         yield return new WaitForSeconds(1f);
-        isTransitioning = false; // επιτρέπει ξανά την αλλαγή
+        isTransitioning = false;
     }
 
-    private IEnumerator FadeAudio(AudioSource from, AudioSource to, float duration)
+    private IEnumerator FadeAudio(AudioSource from, AudioSource to, float duration, float fromTargetVolume, float toTargetVolume)
     {
         float time = 0;
         to.volume = 0;
@@ -86,12 +90,13 @@ public class AreaSoundManager : MonoBehaviour
         while (time < duration)
         {
             from.volume = Mathf.Lerp(startVolFrom, 0, time / duration);
-            to.volume = Mathf.Lerp(0, 1, time / duration);
+            to.volume = Mathf.Lerp(0, toTargetVolume, time / duration);
             time += Time.deltaTime;
             yield return null;
         }
 
         from.Stop();
-        to.volume = 1;
+        from.volume = fromTargetVolume;
+        to.volume = toTargetVolume;
     }
 }
