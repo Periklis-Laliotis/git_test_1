@@ -16,9 +16,10 @@ public class DesktopController : MonoBehaviour
     private float verticalVelocity;
     private float xRot = 0f;
     private Transform playerBody;
-
+    private PlatformMotionProvider platformMotion;
     void Start()
     {
+        platformMotion = GetComponent<PlatformMotionProvider>();
         controller = GetComponentInParent<CharacterController>();
         playerBody = controller.transform;
 
@@ -37,7 +38,6 @@ public class DesktopController : MonoBehaviour
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
 
-        // movement relative to player's true forward (not camera)
         Vector3 move = (playerBody.forward * moveZ + playerBody.right * moveX) * moveSpeed;
         controller.Move(move * Time.deltaTime);
 
@@ -47,6 +47,14 @@ public class DesktopController : MonoBehaviour
 
         verticalVelocity += gravity * Time.deltaTime;
         controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
+
+        // 🧩 Apply platform motion to the *parent player body* (where CharacterController lives)
+        if (platformMotion)
+        {
+            Vector3 platformDelta = platformMotion.ConsumeDelta();
+            if (platformDelta.sqrMagnitude > 0.000001f)
+                playerBody.position += platformDelta;   // <-- ✅ move the player root transform directly
+        }
     }
 
     void HandleMouseLook()
