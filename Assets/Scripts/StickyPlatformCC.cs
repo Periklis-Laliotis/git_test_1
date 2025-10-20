@@ -8,10 +8,6 @@ public class StickyPlatformCC : MonoBehaviour
     private Vector3 lastPlatformPos;
     private bool following;
 
-    [Header("Debug")]
-    public bool showDebug = false;
-    private Color gizmoColor = Color.red;
-
     void Awake()
     {
         var col = GetComponent<Collider>();
@@ -32,8 +28,6 @@ public class StickyPlatformCC : MonoBehaviour
         {
             targetCC = cc;
             following = true;
-            gizmoColor = Color.green;
-            if (showDebug) Debug.Log($"🟢 Player entered {platform.name}");
         }
     }
 
@@ -44,8 +38,6 @@ public class StickyPlatformCC : MonoBehaviour
         {
             following = false;
             targetCC = null;
-            gizmoColor = Color.red;
-            if (showDebug) Debug.Log($"🔴 Player exited {platform.name}");
         }
     }
 
@@ -53,7 +45,7 @@ public class StickyPlatformCC : MonoBehaviour
     {
         if (following && targetCC != null)
         {
-            // Move the player by the *delta movement* of the platform this frame
+            // Move the player by the delta movement of the platform this frame
             Vector3 delta = platform.position - lastPlatformPos;
             if (delta.sqrMagnitude > 0.0001f)
                 targetCC.Move(delta);
@@ -61,13 +53,5 @@ public class StickyPlatformCC : MonoBehaviour
 
         // Always remember the current platform position
         lastPlatformPos = platform.position;
-    }
-
-    void OnDrawGizmos()
-    {
-        if (!showDebug) return;
-        Gizmos.color = gizmoColor;
-        Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
     }
 }
